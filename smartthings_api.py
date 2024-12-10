@@ -110,11 +110,11 @@ def display_scenes(scenes):
 def main():
     print("Fetching SmartThings devices and scenes...")
 
-    Fetch devices and scenes
+    # Fetch devices and scenes
     devices = get_devices()
     scenes = get_scenes()
 
-    Display fetched data
+    # Display fetched data
     if devices:
         display_devices(devices)
     else:
