@@ -1,11 +1,15 @@
-import dbus
-import dbus.mainloop.glib
-from gi.repository import GLib
-import subprocess
-import requests
-import platform
-
 from smartthings_api import *
+import platform
+os_name = platform.system()
+
+if os_name == "Linux":
+    import dbus
+    import dbus.mainloop.glib
+    from gi.repository import GLib
+    import subprocess
+elif os_name == "Windows":
+    import win32com.client
+    import pythoncom
 
 # Example usage
 SMART_PLUG_ID = load_parameter(".config", "SMART_PLUG_ID")
@@ -16,6 +20,29 @@ BATTERY_CHARGED_THRESHOLD = 95
 BATTERY_NOT_CHARGED_THRESHOLD = 20
 
 last_sent_percentage = None  # To prevent duplicate requests
+
+def handle_battery_status(percentage, state):
+    """Handle battery status changes for both Linux and Windows."""
+    global last_sent_percentage
+
+    if state == 1:
+        print(f"Status: Charging - {percentage}%")
+    elif state == 2:
+        print(f"Status: Discharging - {percentage}%")
+    elif state == 4:
+        print(f"Status: Fully Charged - {percentage}%")
+    else:
+        print(f"Unknown state {state}")
+
+    if percentage <= BATTERY_NOT_CHARGED_THRESHOLD and state == 2:
+        toggle_switch(SMART_PLUG_ID, "on")
+        last_sent_percentage = percentage  # Update last sent percentage
+
+    if (percentage > BATTERY_CHARGED_THRESHOLD and state == 1) or (state == 4 and percentage == 100):
+        toggle_switch(SMART_PLUG_ID, "off")
+        last_sent_percentage = percentage  # Update last sent percentage
+
+    print()
 
 def get_battery_path():
     """Fetch the battery device path using the 'upower' command (Linux only)."""
@@ -43,22 +70,6 @@ def get_battery_percentage_and_state_linux(battery_path):
         print(f"Error fetching battery details: {e}")
         return None, None
 
-def get_battery_percentage_and_state_windows():
-    """Fetch the battery percentage and state using psutil (Windows only)."""
-    try:
-        battery = psutil.sensors_battery()
-        if battery is None:
-            print("No battery information available.")
-            return None, None
-
-        percentage = battery.percent
-        charging = battery.power_plugged
-        state = 1 if charging else 2 if percentage < 100 else 4
-        return percentage, state
-    except Exception as e:
-        print(f"Error fetching battery details: {e}")
-        return None, None
-
 def battery_status_changed_linux(interface, changed_properties, invalidated_properties, battery_path):
     """Callback triggered when battery properties change (Linux only)."""
     global last_sent_percentage
@@ -70,29 +81,6 @@ def battery_status_changed_linux(interface, changed_properties, invalidated_prop
         return
 
     handle_battery_status(percentage, state)
-
-def handle_battery_status(percentage, state):
-    """Handle battery status changes for both Linux and Windows."""
-    global last_sent_percentage
-
-    if state == 1:
-        print(f"Status: Charging - {percentage}%")
-    elif state == 2:
-        print(f"Status: Discharging - {percentage}%")
-    elif state == 4:
-        print(f"Status: Fully Charged - {percentage}%")
-    else:
-        print(f"Unknown state {state}")
-
-    if percentage <= BATTERY_NOT_CHARGED_THRESHOLD and state == 2:
-        toggle_switch(SMART_PLUG_ID, "on")
-        last_sent_percentage = percentage  # Update last sent percentage
-
-    if (percentage > BATTERY_CHARGED_THRESHOLD and state == 1) or (state == 4 and percentage == 100):
-        toggle_switch(SMART_PLUG_ID, "off")
-        last_sent_percentage = percentage  # Update last sent percentage
-
-    print()
 
 def battery_status_listener_linux():
     battery_path = get_battery_path()
@@ -117,37 +105,30 @@ def battery_status_listener_linux():
     loop = GLib.MainLoop()
     loop.run()
 
-try:
-    import psutil
-    import win32com.client
-    import pythoncom
-except:
-    pass
+def battery_event_handler_windows(event):
+    battery = event.TargetInstance
+    percentage = battery.EstimatedChargeRemaining
+    charging = battery.BatteryStatus == 1  # Charging state
+    state = 1 if charging else 2 if percentage < 100 else 4
+    handle_battery_status(percentage, state)
 
 def battery_status_listener_windows():
-    """Monitor battery status changes using WMI (Windows only)."""
     wmi = win32com.client.Dispatch("WbemScripting.SWbemLocator")
-    conn = wmi.ConnectServer(".", "root\\CIMV2")
+    conn = wmi.ConnectServer(".", "root\\cimv2")
     query = "SELECT * FROM __InstanceModificationEvent WITHIN 10 WHERE TargetInstance ISA 'Win32_Battery'"
     event_source = conn.ExecNotificationQuery(query)
     print("Listening for battery status changes on Windows...")
 
     while True:
         try:
+            pythoncom.PumpWaitingMessages()
             event = event_source.NextEvent()
-            battery = event.TargetInstance
-            percentage = battery.EstimatedChargeRemaining
-            charging = battery.BatteryStatus == 6  # Charging state
-            state = 1 if charging else 2 if percentage < 100 else 4
-            handle_battery_status(percentage, state)
+            battery_event_handler_windows(event)
         except Exception as e:
             print(f"Error in WMI event listener: {e}")
             break
 
-
 def main():
-    os_name = platform.system()
-
     if os_name == "Linux":
         print("Setting up event listener for Linux...")
         battery_status_listener_linux()  
@@ -158,7 +139,6 @@ def main():
 
     else:
         print(f"Unsupported OS: {os_name}. Exiting.")
-
 
 if __name__ == "__main__":
     main()
