@@ -12,7 +12,7 @@ SMART_PLUG_ID = load_parameter(".config", "SMART_PLUG_ID")
 # toggle_switch(SMART_PLUG_ID, "off")  # Turn off the smart plug
 
 BATTERY_CHARGED_THRESHOLD = 95
-BATTERY_NOT_CHARGED_THRESHOLD = 90
+BATTERY_NOT_CHARGED_THRESHOLD = 20
 
 last_sent_percentage = None  # To prevent duplicate requests
 
