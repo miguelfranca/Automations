@@ -149,8 +149,5 @@ def My_SmartThings():
     else:
         print("No scenes found.")
 
-    # control_device("f144305a-bbc8-4339-ba41-57a18df2da5f", "switch", "on")
-    # control_device("f144305a-bbc8-4339-ba41-57a18df2da5f", "switch", "off")
-
 # Exported functions for reuse
 __all__ = ["get_devices", "get_device_status", "control_device", "toggle_switch", "My_SmartThings", "display_devices", "get_scenes", "display_scenes", "load_parameter"]
