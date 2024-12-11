@@ -4,13 +4,15 @@ from gi.repository import GLib
 import subprocess
 import requests
 
-SMARTTHINGS_OFF_SCENE_ID = "id"
-SMARTTHINGS_ON_SCENE_ID = "id"
-AUTHORIZATION_TOKEN = "token"
+from smartthings_api import *
+
+# Example usage
+SMART_PLUG_ID = load_parameter(".config", "SMART_PLUG_ID")
+# toggle_switch(SMART_PLUG_ID, "on")  # Turn on the smart plug
+# toggle_switch(SMART_PLUG_ID, "off")  # Turn off the smart plug
+
 BATTERY_CHARGED_THRESHOLD = 95
 BATTERY_NOT_CHARGED_THRESHOLD = 90
-PLUG_OFF_URL = f"https://api.smartthings.com/v1/scenes/{SMARTTHINGS_OFF_SCENE_ID}/execute"
-PLUG_ON_URL = f"https://api.smartthings.com/v1/scenes/{SMARTTHINGS_ON_SCENE_ID}/execute"
 
 last_sent_percentage = None  # To prevent duplicate requests
 
@@ -41,20 +43,6 @@ def get_battery_percentage_and_state(battery_path):
         print(f"Error fetching battery details: {e}")
         return None, None
 
-
-def send_http_request(url):
-    """Send an HTTP POST request to the SmartThings API."""
-    try:
-        headers = {"Authorization": f"Bearer {AUTHORIZATION_TOKEN}"}
-        response = requests.post(url, headers=headers)
-        if response.status_code == 200:
-            print("HTTP request sent successfully!")
-        else:
-            print(f"Failed to send HTTP request: {response.status_code} - {response.text}")
-    except Exception as e:
-        print(f"Error sending HTTP request: {e}")
-
-
 def battery_status_changed(interface, changed_properties, invalidated_properties, battery_path):
     """Callback triggered when battery properties change."""
     global last_sent_percentage
@@ -75,13 +63,11 @@ def battery_status_changed(interface, changed_properties, invalidated_properties
         print(f"Unknown state {state}")
 
     if percentage <= BATTERY_NOT_CHARGED_THRESHOLD and state == 2:
-        print("Battery below threshold. Sending HTTP request...")
-        send_http_request(PLUG_ON_URL)
+        toggle_switch(SMART_PLUG_ID, "on")
         last_sent_percentage = percentage  # Update last sent percentage
 
     if (percentage > BATTERY_CHARGED_THRESHOLD and state == 1) or (state == 4 and percentage == 100):
-        print("Battery above threshold. Sending HTTP request...")
-        send_http_request(PLUG_OFF_URL)
+        toggle_switch(SMART_PLUG_ID, "off")
         last_sent_percentage = percentage  # Update last sent percentage
 
     print()
