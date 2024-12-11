@@ -15,6 +15,7 @@ elif os_name == "Windows":
 SMART_PLUG_ID = load_parameter(".config", "SMART_PLUG_ID")
 BATTERY_CHARGED_THRESHOLD = 95
 BATTERY_NOT_CHARGED_THRESHOLD = 20
+WINDOWS_POOL_INTERVAL = 10
 
 class BatteryState(Enum):
     CHARGING = 1
@@ -111,7 +112,7 @@ def battery_event_handler_windows(event):
 def battery_status_listener_windows():
     wmi = win32com.client.Dispatch("WbemScripting.SWbemLocator")
     conn = wmi.ConnectServer(".", "root\\cimv2")
-    query = "SELECT * FROM __InstanceModificationEvent WITHIN 1 WHERE TargetInstance ISA 'Win32_Battery'"
+    query = f"SELECT * FROM __InstanceModificationEvent WITHIN {WINDOWS_POOL_INTERVAL} WHERE TargetInstance ISA 'Win32_Battery'"
     event_source = conn.ExecNotificationQuery(query)
     print("Listening for battery status changes on Windows...")
 
