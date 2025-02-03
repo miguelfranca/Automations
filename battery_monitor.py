@@ -1,7 +1,13 @@
 from smartthings_api import *
+from datetime import datetime
 import platform
 from enum import Enum
+import subprocess
+
 os_name = platform.system()
+
+# Auto startup on linux
+# https://askubuntu.com/questions/584813/how-to-add-custom-applications-scripts-in-startup-applications-in-14-10
 
 if os_name == "Linux":
     import dbus
@@ -13,9 +19,10 @@ elif os_name == "Windows":
     import pythoncom
 
 SMART_PLUG_ID = load_parameter(".config", "SMART_PLUG_ID")
-BATTERY_CHARGED_THRESHOLD = 95
-BATTERY_NOT_CHARGED_THRESHOLD = 20
+BATTERY_CHARGED_THRESHOLD = 100
+BATTERY_NOT_CHARGED_THRESHOLD = 60
 WINDOWS_POOL_INTERVAL = 10
+LOG_FILE = "log.txt"
 
 class BatteryState(Enum):
     CHARGING = 1
@@ -26,15 +33,16 @@ class BatteryState(Enum):
 def handle_battery_status(percentage, state):
     global last_sent_percentage
 
-    print(f"Status: {state.name} - {percentage}%")
+    log(LOG_FILE, f"Status: {state.name} - {percentage}%")
 
     if percentage <= BATTERY_NOT_CHARGED_THRESHOLD and state == BatteryState.DISCHARGING:
-        toggle_switch(SMART_PLUG_ID, "on")
+        code = toggle_switch(SMART_PLUG_ID, "on")
+        log(LOG_FILE, f"Smart plug {SMART_PLUG_ID} - oned with code {code}")
+        showNotification("Charging...")
 
-    if percentage > BATTERY_CHARGED_THRESHOLD and state == BatteryState.CHARGING:
-        toggle_switch(SMART_PLUG_ID, "off")
-
-    print()
+    if (percentage > BATTERY_CHARGED_THRESHOLD and state == BatteryState.CHARGING) or state == BatteryState.FULLY_CHARGED:
+        code = toggle_switch(SMART_PLUG_ID, "off")
+        log(LOG_FILE, f"Smart plug {SMART_PLUG_ID} - offed with code {code}")
 
 def get_battery_path():
     """Fetch the battery device path using the 'upower' command"""
@@ -44,9 +52,9 @@ def get_battery_path():
         for path in paths:
             if "battery" in path:
                 return path.strip()
-        print("No battery device found!")
+        log(LOG_FILE, "No battery device found!")
     except Exception as e:
-        print(f"Error fetching battery path: {e}")
+        log(LOG_FILE, f"Error fetching battery path: {e}")
     return None
 
 def get_battery_percentage_and_state_linux(battery_path):
@@ -66,7 +74,7 @@ def get_battery_percentage_and_state_linux(battery_path):
 
         return percentage, state
     except Exception as e:
-        print(f"Error fetching battery details: {e}")
+        log(LOG_FILE, f"Error fetching battery details: {e}")
         return None, None
 
 def battery_status_changed_linux(interface, changed_properties, invalidated_properties, battery_path):
@@ -74,7 +82,7 @@ def battery_status_changed_linux(interface, changed_properties, invalidated_prop
     percentage, state = get_battery_percentage_and_state_linux(battery_path)
 
     if percentage is None:
-        print("Could not fetch battery percentage.")
+        log(LOG_FILE, "Could not fetch battery percentage.")
         return
 
     handle_battery_status(percentage, state)
@@ -82,10 +90,10 @@ def battery_status_changed_linux(interface, changed_properties, invalidated_prop
 def battery_status_listener_linux():
     battery_path = get_battery_path()
     if not battery_path:
-        print("Battery path could not be determined. Exiting.")
+        log(LOG_FILE, "Battery path could not be determined. Exiting.")
         return
 
-    print(f"Using battery path: {battery_path}")
+    log(LOG_FILE, f"Using battery path: {battery_path}")
 
     dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
     bus = dbus.SystemBus()
@@ -98,7 +106,8 @@ def battery_status_listener_linux():
         path=battery_path
     )
 
-    print("Listening for battery status changes...")
+    battery_status_changed_linux(None, None, None, battery_path)
+    log(LOG_FILE, "Listening for battery status changes...")
     loop = GLib.MainLoop()
     loop.run()
 
@@ -114,7 +123,7 @@ def battery_status_listener_windows():
     conn = wmi.ConnectServer(".", "root\\cimv2")
     query = f"SELECT * FROM __InstanceModificationEvent WITHIN {WINDOWS_POOL_INTERVAL} WHERE TargetInstance ISA 'Win32_Battery'"
     event_source = conn.ExecNotificationQuery(query)
-    print("Listening for battery status changes on Windows...")
+    log(LOG_FILE, "Listening for battery status changes on Windows...")
 
     while True:
         try:
@@ -122,20 +131,24 @@ def battery_status_listener_windows():
             event = event_source.NextEvent()
             battery_event_handler_windows(event)
         except Exception as e:
-            print(f"Error in WMI event listener: {e}")
+            log(LOG_FILE, f"Error in WMI event listener: {e}")
             break
+
+def showNotification(message):
+    subprocess.Popen(['notify-send', message])
+    return
             
 def main():
     if os_name == "Linux":
-        print("Setting up event listener for Linux...")
+        log(LOG_FILE, "Setting up event listener for Linux...")
         battery_status_listener_linux()  
 
     elif os_name == "Windows":
-        print("Setting up event listener for Windows...")
+        log(LOG_FILE, "Setting up event listener for Windows...")
         battery_status_listener_windows()
 
     else:
-        print(f"Unsupported OS: {os_name}. Exiting.")
+        log(LOG_FILE, f"Unsupported OS: {os_name}. Exiting.")
 
 if __name__ == "__main__":
     main()
