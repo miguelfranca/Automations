@@ -919,11 +919,6 @@
                     </div>
 
                     <div class='form-group'>
-                        <label for='start-datetime-${eventCount}'>Start Date & Time:</label>
-                        <input type='datetime-local' id='start-datetime-${eventCount}' value='${lastEndTime}'>
-                    </div>
-
-                    <div class='form-group'>
                         <label for='end-datetime-${eventCount}'>End Date & Time:</label>
                         <div class="datetime-container">
                             <input type='datetime-local' id='end-datetime-${eventCount}' value='${nowTime}' data-default-time="${nowTime}" oninput="handleEndTimeChange(${eventCount})">
@@ -940,6 +935,11 @@
                                 </div>
                             </div>
                         </div>
+                    </div>
+
+                    <div class='form-group'>
+                        <label for='start-datetime-${eventCount}'>Start Date & Time:</label>
+                        <input type='datetime-local' id='start-datetime-${eventCount}' value='${lastEndTime}'>
                     </div>
 
                     <button class="secondary-btn hidden" id="add-next-btn-${eventCount}" onclick="addNextEvent(${eventCount}, 0, 0, '')">Add Next Event</button>
