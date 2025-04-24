@@ -1,6 +1,8 @@
 import requests
 import json
 from datetime import datetime
+import argparse
+import os
 
 # Load API token from file
 def load_parameter(file_path, parameter):
@@ -11,8 +13,14 @@ def load_parameter(file_path, parameter):
                 return line.strip().split("=", 1)[1].strip('"')
     raise ValueError(f"{parameter} not found in the specified file.")
 
-SMARTTHINGS_API_TOKEN = load_parameter(".config", "SMARTTHINGS_API_TOKEN")
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+CONFIG_FILE = os.path.join(BASE_DIR, ".config")
+
+LOGGING = False
+
+SMARTTHINGS_API_TOKEN = load_parameter(CONFIG_FILE, "SMARTTHINGS_API_TOKEN")
 BASE_URL = "https://api.smartthings.com/v1"
+LOG_FILE = "log.txt"
 
 # Headers for API requests
 HEADERS = {
@@ -21,6 +29,20 @@ HEADERS = {
     "Accept": "application/json"
 }
 
+def log(file_path: str, content: str) -> None:
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    full_content = f"[{timestamp}] {content}"
+    print(content)
+    
+    if(not LOGGING):
+        return
+
+    try:
+        with open(file_path, 'a') as file:
+            file.write(full_content + '\n')
+    except Exception as e:
+        pass
+
 def get_devices():
     """Fetch all SmartThings devices."""
     url = f"{BASE_URL}/devices"
@@ -28,7 +50,7 @@ def get_devices():
     if response.status_code == 200:
         return response.json()["items"]
     else:
-        print(f"Failed to fetch devices: {response.status_code} - {response.text}")
+        log(LOG_FILE, f"Failed to fetch devices: {response.status_code} - {response.text}")
         return []
 
 def get_device_status(device_id):
@@ -38,7 +60,7 @@ def get_device_status(device_id):
     if response.status_code == 200:
         return response.json()
     else:
-        print(f"Failed to fetch status for device {device_id}: {response.status_code} - {response.text}")
+        log(LOG_FILE, f"Failed to fetch status for device {device_id}: {response.status_code} - {response.text}")
         return {}
 
 def control_device(device_id, capability, command, component="main", arguments=None):
@@ -62,26 +84,32 @@ def control_device(device_id, capability, command, component="main", arguments=N
 
     response = requests.post(url, headers=HEADERS, json=payload)
     if response.status_code == 200:
-        print(f"Device {device_id} {command}ed successfully.")
+        log(LOG_FILE, f"Device {device_id} {command}ed successfully.")
     else:
-        print(f"Failed to {command} device {device_id}: {response.status_code} - {response.text}")
+        log(LOG_FILE, f"Failed to {command} device {device_id}: {response.status_code} - {response.text}")
+
+    return response.status_code
 
 def toggle_switch(device_id, state):
     """Turn a switch on or off."""
     if state.lower() not in {"on", "off"}:
         raise ValueError("Invalid state: must be 'on' or 'off'")
-    control_device(device_id, "switch", state)
+    return control_device(device_id, "switch", state)
 
 def display_devices():
-    print("\n=== SmartThings Devices ===")
+    log(LOG_FILE, "\n=== SmartThings Devices ===")
     devices = get_devices()
+
+    if(len(devices) == 0):
+        log(LOG_FILE, "No scenes found.")
+
     for device in devices:
-        print(f"\nDevice Name: {device['label']}")
-        print(f"Device ID: {device['deviceId']}")
+        log(LOG_FILE, f"\nDevice Name: {device['label']}")
+        log(LOG_FILE, f"Device ID: {device['deviceId']}")
 
         device_manufacturer = device.get("deviceManufacturerCode", "Unknown")
         if(device_manufacturer != "Unknown"):
-            print(f"Manufacturer: {device_manufacturer}")
+            log(LOG_FILE, f"Manufacturer: {device_manufacturer}")
 
         # Fetch device status to check for "switch" capability
         capabilities = device.get('components', [{}])[0].get('capabilities', [])
@@ -96,11 +124,11 @@ def display_devices():
                 .get("value")
             )
             if switch_status is not None:
-                print(f"Switch Status: {switch_status.capitalize()}")
+                log(LOG_FILE, f"Switch Status: {switch_status.capitalize()}")
 
-        print("Capabilities:")
+        log(LOG_FILE, "Capabilities:")
         for capability in capabilities:
-            print(f"  - {capability.get('id', 'Unknown')}")
+            log(LOG_FILE, f"  - {capability.get('id', 'Unknown')}")
 
 def get_scenes():
     """Fetch all SmartThings scenes."""
@@ -109,12 +137,16 @@ def get_scenes():
     if response.status_code == 200:
         return response.json()["items"]
     else:
-        print(f"Failed to fetch scenes: {response.status_code} - {response.text}")
+        log(LOG_FILE, f"Failed to fetch scenes: {response.status_code} - {response.text}")
         return []
 
 def display_scenes():
-    print("\n=== SmartThings Scenes ===")
+    log(LOG_FILE, "\n=== SmartThings Scenes ===")
     scenes = get_scenes()
+    
+    if(len(scenes) == 0):
+        log(LOG_FILE, "No scenes found.")
+
     for scene in scenes:
         name = scene.get("sceneName", "Unknown")
         scene_id = scene.get("sceneId", "Unknown")
@@ -127,27 +159,34 @@ def display_scenes():
         else:
             formatted_date = "Unknown"
 
-        print(f"\nScene Name: {name}")
-        print(f"Scene ID: {scene_id}")
-        print(f"Last Modified: {formatted_date}")
+        log(LOG_FILE, f"\nScene Name: {name}")
+        log(LOG_FILE, f"Scene ID: {scene_id}")
+        log(LOG_FILE, f"Last Modified: {formatted_date}")
 
 def My_SmartThings():
-    print("Fetching SmartThings devices and scenes...")
+    log(LOG_FILE, "Fetching SmartThings devices and scenes...")
 
-    # Fetch devices and scenes
-    devices = get_devices()
-    scenes = get_scenes()
+    display_devices()
+    display_scenes()
 
-    # Display fetched data
-    if devices:
-        display_devices(devices)
+def parse_arguments():
+    parser = argparse.ArgumentParser(description="SmartThings CLI for Argos")
+    parser.add_argument("--display-devices", action="store_true", help="Display SmartThings devices")
+    parser.add_argument("--toggle-switch", nargs=2, metavar=("device_id", "state"), help="Toggle a device switch state")
+    return parser.parse_args()
+
+def main():
+    args = parse_arguments()
+    if args.display_devices:
+        display_devices()
+    elif args.toggle_switch:
+        device_id, state = args.toggle_switch
+        toggle_switch(device_id, state)
     else:
-        print("No devices found.")
+        print("No valid action provided.")
+if __name__ == "__main__":
+    main()
 
-    if scenes:
-        display_scenes(scenes)
-    else:
-        print("No scenes found.")
 
 # Exported functions for reuse
-__all__ = ["get_devices", "get_device_status", "control_device", "toggle_switch", "My_SmartThings", "display_devices", "get_scenes", "display_scenes", "load_parameter"]
+__all__ = ["get_devices", "get_device_status", "control_device", "toggle_switch", "My_SmartThings", "display_devices", "get_scenes", "display_scenes", "load_parameter", "log"]
