@@ -1,0 +1,1021 @@
+<!DOCTYPE html>
+<html lang='en'>
+<head>
+    <meta charset='UTF-8'>
+    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+    <title>Create Calendar Event</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { 
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        :root {
+            --primary-color: #2563eb;
+            --primary-hover: #1d4ed8;
+            --danger-color: #dc2626;
+            --danger-hover: #b91c1c;
+            --secondary-color: #4b5563;
+            --secondary-hover: #374151;
+            --border-color: #e5e7eb;
+            --text-color: #1f2937;
+            --text-light: #6b7280;
+            --background-color: #f9fafb;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--background-color);
+            margin: 0;
+            padding: 5px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            color: var(--text-color);
+        }
+
+        .container {
+            max-width: 100%;
+            width: 480px;
+            padding: 0px;
+            border-radius: 12px;
+            margin-top: 5px;
+            margin-right: 48px;
+        }
+
+        h2 {
+            text-align: center;
+            font-size: 24px;
+            font-weight: 600;
+            color: var(--text-color);
+            margin-bottom: 24px;
+        }
+
+        .form-group { 
+            margin-bottom: 20px; 
+            text-align: left; 
+            position: relative;
+        }
+
+        label {
+            font-size: 14px;
+            font-weight: 500;
+            display: block;
+            color: var(--text-color);
+            margin-bottom: 8px;
+            pointer-events: none;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.2s ease;
+            background-color: #fff;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            font-size: 14px;
+            font-weight: 600;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin-top: 0px;
+        }
+
+        /* button:hover { 
+            transform: translateY(-1px);
+        } */
+
+        .primary-btn { 
+            background-color: var(--primary-color);
+        }
+        .primary-btn:hover { 
+            background-color: var(--primary-hover);
+        }
+
+        .danger-btn { 
+            background-color: var(--danger-color);
+        }
+        .danger-btn:hover { 
+            background-color: var(--danger-hover);
+        }
+
+        .secondary-btn { 
+            background-color: var(--secondary-color);
+        }
+        .secondary-btn:hover { 
+            background-color: var(--secondary-hover);
+        }
+
+        .event-group {
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 0px;
+            text-align: left;
+            background-color: #fff;
+            transition: all 0.2s ease;
+            position: relative;
+            padding-top: 50px;
+        }
+
+        .event-group:hover {
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .remove-event-btn {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background-color: var(--danger-color);
+            border: none;
+            color: white;
+            cursor: pointer;
+            padding: 8px 12px;
+            font-size: 16px;
+            width: auto;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            z-index: 1;
+        }
+
+        .remove-event-btn:disabled {
+            background-color: var(--secondary-color);
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        .remove-event-btn:disabled:hover {
+            transform: none;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .hidden { 
+            display: none; 
+        }
+
+        .button-group {
+            display: flex;
+        }
+
+        .button-group button {
+            margin-top: 0;
+        }
+
+        .now-button {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin-top: 4px;
+            display: inline-block;
+        }
+        
+
+        .now-button:hover {
+            background-color: var(--primary-hover);
+        }
+
+        .live-indicator {
+            position: absolute;
+            top: 8px;
+            right: 0;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 10px;
+            color: var(--text-light);
+            background-color: rgba(255, 255, 255, 0.9);
+            padding: 2px 6px;
+            border-radius: 4px;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        .live-dot {
+            width: 4px;
+            height: 4px;
+            background-color: #ef4444;
+            border-radius: 50%;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        input[type="datetime-local"] {
+            width: 100%;
+            padding: 12px;
+        }
+
+        .datetime-container {
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            gap: 4px;
+        }
+
+      
+
+        
+
+        
+        .calendar-select {
+            width: 100%;
+            position: relative;
+            cursor: pointer;
+        }
+
+        .calendar-select-trigger {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 14px;
+            background-color: white;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .calendar-select-trigger::after {
+            content: '▼';
+            font-size: 12px;
+            color: var(--text-light);
+            margin-left: auto;
+        }
+
+        .selected-calendar {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-grow: 1;
+        }
+
+        .calendar-options {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            margin-top: 4px;
+            max-height: none;
+            overflow-y: auto;
+            z-index: 1000;
+            display: none;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1px;
+            padding: 2px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .calendar-select.open .calendar-options {
+            display: grid;
+        }
+
+        .calendar-select:not(.open) .calendar-options {
+            display: none;
+        }
+
+        .calendar-option {
+            padding: 8px 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border-radius: 4px;
+            min-width: 0;
+            overflow: hidden;
+        }
+
+        .calendar-option:hover {
+            background-color: #f0f0f0;
+        }
+
+        .calendar-color {
+            flex-shrink: 0;
+            min-width: 16px;
+            height: 16px;
+            border-radius: 4px;
+        }
+
+        .calendar-name {
+            white-space: normal;
+            word-wrap: break-word;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            line-clamp: 2;
+        }
+
+        .suggestions-container {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            margin-top: 4px;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 1000;
+            display: none;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .suggestion-item {
+            padding: 8px 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .suggestion-item:hover {
+            background-color: #f0f0f0;
+        }
+
+        .suggestion-count {
+            color: var(--text-light);
+            font-size: 12px;
+        }
+
+        .event-name-container {
+            position: relative;
+        }
+
+        .clear-input-btn {
+            position: absolute;
+            right: 0;
+            top: 0;
+            bottom: 0;
+            width: 36px;
+            background: none;
+            border: none;
+            color: var(--text-light);
+            cursor: pointer;
+            font-size: 16px;
+            display: none;
+            z-index: 2;
+            transition: color 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding-top: 2px;
+        }
+
+        .clear-input-btn:hover {
+            color: var(--text-color);
+            background: none;
+        }
+
+        .event-name-container input {
+            padding-right: 36px;
+            line-height: 1.2;
+        }
+
+        @media (max-width: 480px) {
+            .calendar-options {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .quick-add-btn {
+            position: absolute;
+            right: -40px;
+            top: 50%;
+            transform: translateY(-50%);
+            background-color: var(--primary-color);
+            border: none;
+            color: white;
+            cursor: pointer;
+            padding: 8px 12px;
+            font-size: 14px;
+            width: auto;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            z-index: 1;
+        }
+
+        .quick-add-menu {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            z-index: 1000;
+            display: none;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            width: 200px;
+            max-height: 300px;
+            overflow-y: auto;
+            margin-top: 4px;
+        }
+
+        .quick-add-menu.show {
+            display: block;
+        }
+
+        .quick-add-option {
+            padding: 8px 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .quick-add-option:last-child {
+            border-bottom: none;
+        }
+
+        .quick-add-option:hover {
+            background-color: #f0f0f0;
+        }
+
+        .quick-add-option .calendar-color {
+            width: 16px;
+            height: 16px;
+            border-radius: 4px;
+            flex-shrink: 0;
+        }
+
+        .quick-add-option span {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .button-container {
+            display: flex;
+            gap: 8px;
+            margin-top: 4px;
+        }
+
+        .button-container button {
+            flex: 1;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        .save-button {
+            position: fixed;
+            right: 0;
+            top: 0;
+            bottom: 0;
+            width: 48px;
+            background-color: var(--primary-color);
+            border: none;
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 0;
+        }
+
+        .save-button:active {
+            background-color: var(--primary-hover);
+        }
+
+        .save-button svg {
+            width: 24px;
+            height: 24px;
+        }
+    </style>
+</head>
+<body>
+    <div class='container'>
+        <div id='events-container'>
+            
+        </div>
+    </div>
+    
+    <button class="save-button" onclick="submitEvent()" title="Save Events">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+            <polyline points="17 21 17 13 7 13 7 21"></polyline>
+            <polyline points="7 3 7 8 15 8"></polyline>
+        </svg>
+    </button>
+    
+    <script>
+        let eventCount = 0;
+        const DEFAULT_CALENDAR = "Formula 1";
+
+        //not automate
+        const CALENDAR_SUGGESTIONS = { "content://com.android.calendar/calendars/20": {"Kyndryl": 1}, "content://com.android.calendar/calendars/21": {"Transportation": 1}, "content://com.android.calendar/calendars/15": {"Formula 1": 2}, "content://com.android.calendar/calendars/6": {"Programing": 0, "Automate": 6}, "content://com.android.calendar/calendars/4": {"Youtube": 2, "kamskmas": 4}, "content://com.android.calendar/calendars/28": {"Family": 0, "Automate": 4}, "content://com.android.calendar/calendars/26": {"Getting Ready": 0} };
+        //not automate
+        const CALENDARS = [{"account_type":"com.google","mutators":"null","ownerAccount":"8igai3v1hhtulnavom6s2p4hdk@group.calendar.google.com","allowedReminders":"0,1,2","cal_sync3":"null","cal_sync2":"null","isPrimary as Long":"0","maxReminders as Long":"5","cal_sync1":"8igai3v1hhtulnavom6s2p4hdk@group.calendar.google.com","cal_sync10":"null","account_name":"myke.fr66@gmail.com","cal_sync7":"null","cal_sync6":"null","canPartiallyUpdate as Long":"1","cal_sync5":"0","sync_events as Long":"1","cal_sync4":"1","canOrganizerRespond as Long":"1","calendar_color as Long":"-2818048","cal_sync9":"0","calendar_location":"null","cal_sync8":"1731354083010","dirty as Long":"0","visible as Long":"1","calendar_timezone":"Europe/London","calendar_access_level as Long":"700","allowedAvailability":"0,1","_sync_id":"null","deleted as Long":"0","name":"Youtube","canModifyTimeZone as Long":"1","_id as Long":"4","calendar_color_index":"","allowedAttendeeTypes":"0,1,2","calendar_displayName":"Youtube","id":0,"uri":"content://com.android.calendar/calendars/4"},{"account_type":"com.google","mutators":"null","ownerAccount":"djvohjl3vvqn38c369dkafueic@group.calendar.google.com","allowedReminders":"0,1,2","cal_sync3":"null","cal_sync2":"null","isPrimary as Long":"0","maxReminders as Long":"5","cal_sync1":"djvohjl3vvqn38c369dkafueic@group.calendar.google.com","cal_sync10":"null","account_name":"myke.fr66@gmail.com","cal_sync7":"null","cal_sync6":"null","canPartiallyUpdate as Long":"1","cal_sync5":"0","sync_events as Long":"1","cal_sync4":"1","canOrganizerRespond as Long":"1","calendar_color as Long":"-11958553","cal_sync9":"0","calendar_location":"null","cal_sync8":"1717085113782","dirty":"null","visible as Long":"1","calendar_timezone":"Europe/London","calendar_access_level as Long":"700","allowedAvailability":"0,1","_sync_id":"null","deleted as Long":"0","name":"Sleep","canModifyTimeZone as Long":"1","_id as Long":"5","calendar_color_index":"16","allowedAttendeeTypes":"0,1,2","calendar_displayName":"Sleep","id":1,"uri":"content://com.android.calendar/calendars/5"},{"account_type":"com.google","mutators":"null","ownerAccount":"lpi8930bidbe9fkev589nf8e90@group.calendar.google.com","allowedReminders":"0,1,2","cal_sync3":"null","cal_sync2":"null","isPrimary as Long":"0","maxReminders as Long":"5","cal_sync1":"lpi8930bidbe9fkev589nf8e90@group.calendar.google.com","cal_sync10":"null","account_name":"myke.fr66@gmail.com","cal_sync7":"null","cal_sync6":"null","canPartiallyUpdate as Long":"1","cal_sync5":"0","sync_events as Long":"1","cal_sync4":"1","canOrganizerRespond as Long":"1","calendar_color as Long":"-8662712","cal_sync9":"0","calendar_location":"null","cal_sync8":"1717085113789","dirty":"null","visible as Long":"1","calendar_timezone":"Europe/London","calendar_access_level as Long":"700","allowedAvailability":"0,1","_sync_id":"null","deleted as Long":"0","name":"Programing","canModifyTimeZone as Long":"1","_id as Long":"6","calendar_color_index":"9","allowedAttendeeTypes":"0,1,2","calendar_displayName":"Programing","id":2,"uri":"content://com.android.calendar/calendars/6"},{"account_type":"com.google","mutators":"null","ownerAccount":"8cqpm1lth8q3igq4ndi7kj3370@group.calendar.google.com","allowedReminders":"0,1,2","cal_sync3":"null","cal_sync2":"null","isPrimary as Long":"0","maxReminders as Long":"5","cal_sync1":"8cqpm1lth8q3igq4ndi7kj3370@group.calendar.google.com","cal_sync10":"null","account_name":"myke.fr66@gmail.com","cal_sync7":"null","cal_sync6":"null","canPartiallyUpdate as Long":"1","cal_sync5":"0","sync_events as Long":"1","cal_sync4":"1","canOrganizerRespond as Long":"1","calendar_color as Long":"-4013374","cal_sync9":"0","calendar_location":"null","cal_sync8":"1731354082917","dirty":"null","visible as Long":"1","calendar_timezone":"Europe/London","calendar_access_level as Long":"700","allowedAvailability":"0,1","_sync_id":"null","deleted as Long":"0","name":"Video Games","canModifyTimeZone as Long":"1","_id as Long":"8","calendar_color_index":"19","allowedAttendeeTypes":"0,1,2","calendar_displayName":"Video Games","id":3,"uri":"content://com.android.calendar/calendars/8"},{"account_type":"com.google","mutators":"null","ownerAccount":"v3vr2kntf2p5un51o9vs0cejes@group.calendar.google.com","allowedReminders":"0,1,2","cal_sync3":"null","cal_sync2":"null","isPrimary as Long":"0","maxReminders as Long":"5","cal_sync1":"v3vr2kntf2p5un51o9vs0cejes@group.calendar.google.com","cal_sync10":"null","account_name":"myke.fr66@gmail.com","cal_sync7":"null","cal_sync6":"null","canPartiallyUpdate as Long":"1","cal_sync5":"0","sync_events as Long":"1","cal_sync4":"1","canOrganizerRespond as Long":"1","calendar_color as Long":"-267901","cal_sync9":"0","calendar_location":"null","cal_sync8":"1717085114487","dirty":"null","visible as Long":"1","calendar_timezone":"Europe/London","calendar_access_level as Long":"700","allowedAvailability":"0,1","_sync_id":"null","deleted as Long":"0","name":"Refeição","canModifyTimeZone as Long":"1","_id as Long":"10","calendar_color_index":"11","allowedAttendeeTypes":"0,1,2","calendar_displayName":"Refeição","id":4,"uri":"content://com.android.calendar/calendars/10"},{"account_type":"com.google","mutators":"null","ownerAccount":"ouafc4i4pmlvqg0pe3953p1mes@group.calendar.google.com","allowedReminders":"0,1,2","cal_sync3":"null","cal_sync2":"null","isPrimary as Long":"0","maxReminders as Long":"5","cal_sync1":"ouafc4i4pmlvqg0pe3953p1mes@group.calendar.google.com","cal_sync10":"null","account_name":"myke.fr66@gmail.com","cal_sync7":"null","cal_sync6":"null","canPartiallyUpdate as Long":"1","cal_sync5":"0","sync_events as Long":"1","cal_sync4":"1","canOrganizerRespond as Long":"1","calendar_color as Long":"-509406","cal_sync9":"0","calendar_location":"null","cal_sync8":"1731354083019","dirty as Long":"0","visible as Long":"1","calendar_timezone":"Europe/London","calendar_access_level as Long":"700","allowedAvailability":"0,1","_sync_id":"null","deleted as Long":"0","name":"Watching Movies","canModifyTimeZone as Long":"1","_id as Long":"11","calendar_color_index":"3","allowedAttendeeTypes":"0,1,2","calendar_displayName":"Watching Movies","id":5,"uri":"content://com.android.calendar/calendars/11"},{"account_type":"com.google","mutators":"null","ownerAccount":"5rcadpibe5k9eageq58nnkdtp8@group.calendar.google.com","allowedReminders":"0,1,2","cal_sync3":"null","cal_sync2":"null","isPrimary as Long":"0","maxReminders as Long":"5","cal_sync1":"5rcadpibe5k9eageq58nnkdtp8@group.calendar.google.com","cal_sync10":"null","account_name":"myke.fr66@gmail.com","cal_sync7":"null","cal_sync6":"null","canPartiallyUpdate as Long":"1","cal_sync5":"0","sync_events as Long":"1","cal_sync4":"1","canOrganizerRespond as Long":"1","calendar_color as Long":"-6299161","cal_sync9":"0","calendar_location":"null","cal_sync8":"1731354082959","dirty as Long":"0","visible as Long":"1","calendar_timezone":"Europe/London","calendar_access_level as Long":"700","allowedAvailability":"0,1","_sync_id":"null","deleted as Long":"0","name":"Social","canModifyTimeZone as Long":"1","_id as Long":"14","calendar_color_index":"14","allowedAttendeeTypes":"0,1,2","calendar_displayName":"Social","id":6,"uri":"content://com.android.calendar/calendars/14"},{"account_type":"com.google","mutators":"null","ownerAccount":"757ee9e87c3442ccf2e673a05741888572855b16250b0b3a9d2cbd749f34ebe9@group.calendar.google.com","allowedReminders":"0,1,2","cal_sync3":"null","cal_sync2":"null","isPrimary as Long":"0","maxReminders as Long":"5","cal_sync1":"757ee9e87c3442ccf2e673a05741888572855b16250b0b3a9d2cbd749f34ebe9@group.calendar.google.com","cal_sync10":"null","account_name":"myke.fr66@gmail.com","cal_sync7":"null","cal_sync6":"null","canPartiallyUpdate as Long":"1","cal_sync5":"0","sync_events as Long":"1","cal_sync4":"1","canOrganizerRespond as Long":"1","calendar_color as Long":"-4013374","cal_sync9":"0","calendar_location":"null","cal_sync8":"1731339935365","dirty as Long":"0","visible as Long":"1","calendar_timezone":"UTC","calendar_access_level as Long":"700","allowedAvailability":"0,1","_sync_id":"null","deleted as Long":"0","name":"Formula 1","canModifyTimeZone as Long":"1","_id as Long":"15","calendar_color_index":"19","allowedAttendeeTypes":"0,1,2","calendar_displayName":"Formula 1","id":7,"uri":"content://com.android.calendar/calendars/15"},{"account_type":"com.google","mutators":"null","ownerAccount":"vos8d9uijm9ij8rfvtb7n0mqdc@group.calendar.google.com","allowedReminders":"0,1,2","cal_sync3":"null","cal_sync2":"null","isPrimary as Long":"0","maxReminders as Long":"5","cal_sync1":"vos8d9uijm9ij8rfvtb7n0mqdc@group.calendar.google.com","cal_sync10":"null","account_name":"myke.fr66@gmail.com","cal_sync7":"null","cal_sync6":"null","canPartiallyUpdate as Long":"1","cal_sync5":"0","sync_events as Long":"1","cal_sync4":"1","canOrganizerRespond as Long":"1","calendar_color as Long":"-11958553","cal_sync9":"0","calendar_location":"null","cal_sync8":"1731339936186","dirty as Long":"0","visible as Long":"1","calendar_timezone":"Europe/London","calendar_access_level as Long":"700","allowedAvailability":"0,1","_sync_id":"null","deleted as Long":"0","name":"Other","canModifyTimeZone as Long":"1","_id as Long":"16","calendar_color_index":"16","allowedAttendeeTypes":"0,1,2","calendar_displayName":"Other","id":8,"uri":"content://com.android.calendar/calendars/16"},{"account_type":"com.google","mutators":"null","ownerAccount":"c8b6fbe14d55759d2257c56a9d7fb91b23bd6232547dc874a6f1a5f3e470e2df@group.calendar.google.com","allowedReminders":"0,1,2","cal_sync3":"null","cal_sync2":"null","isPrimary as Long":"0","maxReminders as Long":"5","cal_sync1":"c8b6fbe14d55759d2257c56a9d7fb91b23bd6232547dc874a6f1a5f3e470e2df@group.calendar.google.com","cal_sync10":"null","account_name":"myke.fr66@gmail.com","cal_sync7":"null","cal_sync6":"null","canPartiallyUpdate as Long":"1","cal_sync5":"0","sync_events as Long":"1","cal_sync4":"1","canOrganizerRespond as Long":"1","calendar_color as Long":"-35529","cal_sync9":"0","calendar_location":"null","cal_sync8":"1731354082927","dirty":"null","visible as Long":"1","calendar_timezone":"Europe/London","calendar_access_level as Long":"700","allowedAvailability":"0,1","_sync_id":"null","deleted as Long":"0","name":"Kyndryl","canModifyTimeZone as Long":"1","_id as Long":"20","calendar_color_index":"5","allowedAttendeeTypes":"0,1,2","calendar_displayName":"Kyndryl","id":9,"uri":"content://com.android.calendar/calendars/20"},{"account_type":"com.google","mutators":"null","ownerAccount":"66386115a0559d95a31321ebf0ba02cda33f954d16112df305ae8eef3f5b4bd8@group.calendar.google.com","allowedReminders":"0,1,2","cal_sync3":"null","cal_sync2":"null","isPrimary as Long":"0","maxReminders as Long":"5","cal_sync1":"66386115a0559d95a31321ebf0ba02cda33f954d16112df305ae8eef3f5b4bd8@group.calendar.google.com","cal_sync10":"null","account_name":"myke.fr66@gmail.com","cal_sync7":"null","cal_sync6":"null","canPartiallyUpdate as Long":"1","cal_sync5":"0","sync_events as Long":"1","cal_sync4":"1","canOrganizerRespond as Long":"1","calendar_color as Long":"-6644481","cal_sync9":"0","calendar_location":"null","cal_sync8":"1731354082970","dirty":"null","visible as Long":"1","calendar_timezone":"Europe/London","calendar_access_level as Long":"700","allowedAvailability":"0,1","_sync_id":"null","deleted as Long":"0","name":"Transportation","canModifyTimeZone as Long":"1","_id as Long":"21","calendar_color_index":"17","allowedAttendeeTypes":"0,1,2","calendar_displayName":"Transportation","id":10,"uri":"content://com.android.calendar/calendars/21"},{"account_type":"com.google","mutators":"null","ownerAccount":"b852795c40b0bf22bc40864acd29025e31717726d7da823d87a46f2f46b13be6@group.calendar.google.com","allowedReminders":"0,1,2","cal_sync3":"null","cal_sync2":"null","isPrimary as Long":"0","maxReminders as Long":"5","cal_sync1":"b852795c40b0bf22bc40864acd29025e31717726d7da823d87a46f2f46b13be6@group.calendar.google.com","cal_sync10":"null","account_name":"myke.fr66@gmail.com","cal_sync7":"null","cal_sync6":"null","canPartiallyUpdate as Long":"1","cal_sync5":"0","sync_events as Long":"1","cal_sync4":"1","canOrganizerRespond as Long":"1","calendar_color as Long":"-4613377","cal_sync9":"0","calendar_location":"null","cal_sync8":"1731354083032","dirty":"null","visible as Long":"1","calendar_timezone":"Europe/London","calendar_access_level as Long":"700","allowedAvailability":"0,1","_sync_id":"null","deleted as Long":"0","name":"Learning","canModifyTimeZone as Long":"1","_id as Long":"22","calendar_color_index":"18","allowedAttendeeTypes":"0,1,2","calendar_displayName":"Learning","id":11,"uri":"content://com.android.calendar/calendars/22"},{"account_type":"com.google","mutators":"null","ownerAccount":"8791ad7797038a6611bb913a228a1f74cd98ee88097fa1eae1c2960e1d02003e@group.calendar.google.com","allowedReminders":"0,1,2","cal_sync3":"null","cal_sync2":"null","isPrimary as Long":"0","maxReminders as Long":"5","cal_sync1":"8791ad7797038a6611bb913a228a1f74cd98ee88097fa1eae1c2960e1d02003e@group.calendar.google.com","cal_sync10":"null","account_name":"myke.fr66@gmail.com","cal_sync7":"null","cal_sync6":"null","canPartiallyUpdate as Long":"1","cal_sync5":"0","sync_events as Long":"1","cal_sync4":"1","canOrganizerRespond as Long":"1","calendar_color as Long":"-618062","cal_sync9":"0","calendar_location":"null","cal_sync8":"1731354083038","dirty":"null","visible as Long":"1","calendar_timezone":"Europe/London","calendar_access_level as Long":"700","allowedAvailability":"0,1","_sync_id":"null","deleted as Long":"0","name":"Printable Labs","canModifyTimeZone as Long":"1","_id as Long":"23","calendar_color_index":"22","allowedAttendeeTypes":"0,1,2","calendar_displayName":"Printable Labs","id":12,"uri":"content://com.android.calendar/calendars/23"},{"account_type":"com.google","mutators":"null","ownerAccount":"d45db2040e2e5b5fd8cfcc7bb0fc26fa3d1524faa17fc32e4c6d2c184cfbc1c1@group.calendar.google.com","allowedReminders":"0,1,2","cal_sync3":"null","cal_sync2":"null","isPrimary as Long":"0","maxReminders as Long":"5","cal_sync1":"d45db2040e2e5b5fd8cfcc7bb0fc26fa3d1524faa17fc32e4c6d2c184cfbc1c1@group.calendar.google.com","cal_sync10":"null","account_name":"myke.fr66@gmail.com","cal_sync7":"null","cal_sync6":"null","canPartiallyUpdate as Long":"1","cal_sync5":"0","sync_events as Long":"1","cal_sync4":"1","canOrganizerRespond as Long":"1","calendar_color as Long":"-8662712","cal_sync9":"0","calendar_location":"null","cal_sync8":"1731354083044","dirty":"null","visible as Long":"1","calendar_timezone":"Europe/London","calendar_access_level as Long":"700","allowedAvailability":"0,1","_sync_id":"null","deleted as Long":"0","name":"Padel","canModifyTimeZone as Long":"1","_id as Long":"24","calendar_color_index":"9","allowedAttendeeTypes":"0,1,2","calendar_displayName":"Padel","id":13,"uri":"content://com.android.calendar/calendars/24"},{"account_type":"com.google","mutators":"null","ownerAccount":"ea36b47feb7e95f9e734cc17d9baf1b596a19cc98d9f2aed7e7ce1e5a141953f@group.calendar.google.com","allowedReminders":"0,1,2","cal_sync3":"null","cal_sync2":"null","isPrimary as Long":"0","maxReminders as Long":"5","cal_sync1":"ea36b47feb7e95f9e734cc17d9baf1b596a19cc98d9f2aed7e7ce1e5a141953f@group.calendar.google.com","cal_sync10":"null","account_name":"myke.fr66@gmail.com","cal_sync7":"null","cal_sync6":"null","canPartiallyUpdate as Long":"1","cal_sync5":"0","sync_events as Long":"1","cal_sync4":"1","canOrganizerRespond as Long":"1","calendar_color as Long":"-339611","cal_sync9":"0","calendar_location":"null","cal_sync8":"1731421647547","dirty":"null","visible as Long":"1","calendar_timezone":"Europe/London","calendar_access_level as Long":"700","allowedAvailability":"0,1","_sync_id":"null","deleted as Long":"0","name":"Getting Ready","canModifyTimeZone as Long":"1","_id as Long":"26","calendar_color_index":"12","allowedAttendeeTypes":"0,1,2","calendar_displayName":"Getting Ready","id":14,"uri":"content://com.android.calendar/calendars/26"},{"account_type":"com.google","mutators":"null","ownerAccount":"bfaf9d108c9c5d047b88bd03bc4f5c5c9bfb69bfd27cb932b7889efdadcf5606@group.calendar.google.com","allowedReminders":"0,1,2","cal_sync3":"null","cal_sync2":"null","isPrimary as Long":"0","maxReminders as Long":"5","cal_sync1":"bfaf9d108c9c5d047b88bd03bc4f5c5c9bfb69bfd27cb932b7889efdadcf5606@group.calendar.google.com","cal_sync10":"null","account_name":"myke.fr66@gmail.com","cal_sync7":"null","cal_sync6":"null","canPartiallyUpdate as Long":"1","cal_sync5":"0","sync_events as Long":"1","cal_sync4":"1","canOrganizerRespond as Long":"1","calendar_color as Long":"-3490369","cal_sync9":"0","calendar_location":"null","cal_sync8":"1731606221819","dirty":"null","visible as Long":"1","calendar_timezone":"Europe/London","calendar_access_level as Long":"700","allowedAvailability":"0,1","_sync_id":"null","deleted as Long":"0","name":"Exercise","canModifyTimeZone as Long":"1","_id as Long":"27","calendar_color_index":"20","allowedAttendeeTypes":"0,1,2","calendar_displayName":"Exercise","id":15,"uri":"content://com.android.calendar/calendars/27"},{"account_type":"com.google","mutators":"null","ownerAccount":"f8dd36ffde2d38a79ec8e6f266453dd12600f0955246a78a079484c0a06af6a9@group.calendar.google.com","allowedReminders":"0,1,2","cal_sync3":"null","cal_sync2":"null","isPrimary as Long":"0","maxReminders as Long":"5","cal_sync1":"f8dd36ffde2d38a79ec8e6f266453dd12600f0955246a78a079484c0a06af6a9@group.calendar.google.com","cal_sync10":"null","account_name":"myke.fr66@gmail.com","cal_sync7":"null","cal_sync6":"null","canPartiallyUpdate as Long":"1","cal_sync5":"0","sync_events as Long":"1","cal_sync4":"1","canOrganizerRespond as Long":"1","calendar_color as Long":"-11958553","cal_sync9":"0","calendar_location":"null","cal_sync8":"1731606221840","dirty":"null","visible as Long":"1","calendar_timezone":"Europe/London","calendar_access_level as Long":"700","allowedAvailability":"0,1","_sync_id":"null","deleted as Long":"0","name":"Family","canModifyTimeZone as Long":"1","_id as Long":"28","calendar_color_index":"16","allowedAttendeeTypes":"0,1,2","calendar_displayName":"Family","id":16,"uri":"content://com.android.calendar/calendars/28"}];
+        //not automate
+        const INITIAL_EVENT_CALENDAR = "Getting Ready";
+        //not automate
+        const event_name = "Getting Ready";
+        //not automate
+        const start_datetime = new Date(1738856460000).toISOString().slice(0, 16);
+        //not automate
+        const end_datetime = new Date(1738856460000).toISOString().slice(0, 16);
+        
+        //automate const CALENDARS = {jsonEncode(calendars)};
+        //automate const CALENDAR_SUGGESTIONS = {jsonEncode(suggestions)}
+        //automate const INITIAL_EVENT_CALENDAR = \"{calendar["name"]}\";
+        //automate const event_name = \"{event_name}\";
+        //automate const start_datetime = new Date({utcTime(start_time) * 1000}).toISOString().slice(0, 16);
+        //automate const end_datetime = new Date({utcTime(Now) * 1000}).toISOString().slice(0, 16);
+        
+        function getCalendarColor(calendar) {
+            const color = parseInt(calendar["calendar_color as Long"]);
+            
+            // Extract RGB components
+            const r = (color >> 16) & 0xff;
+            const g = (color >> 8) & 0xff;
+            const b = color & 0xff;
+            
+            // Convert to hex with proper padding
+            const toHex = (n) => {
+                const hex = n.toString(16);
+                return hex.length === 1 ? '0' + hex : hex;
+            };
+            
+            return '#' + toHex(r) + toHex(g) + toHex(b);
+        }
+
+        function createCalendarOption(calendar) {
+            const color = getCalendarColor(calendar);
+            return `
+                <div class="calendar-option" data-value="${calendar.calendar_displayName}">
+                    <div class="calendar-color" style="background-color: ${color}"></div>
+                    <span class="calendar-name">${calendar.calendar_displayName}</span>
+                </div>
+            `;
+        }
+
+        function initializeCalendarSelect(selectElement, isInitialEvent = false) {
+            const trigger = selectElement.querySelector('.calendar-select-trigger');
+            const options = selectElement.querySelector('.calendar-options');
+            const selectedValue = selectElement.querySelector('.selected-value');
+            
+            // Set initial value using either DEFAULT_CALENDAR or INITIAL_EVENT_CALENDAR
+            const defaultCalendar = CALENDARS.find(c => c.calendar_displayName === (isInitialEvent ? INITIAL_EVENT_CALENDAR : DEFAULT_CALENDAR)) || CALENDARS[0];
+            const color = getCalendarColor(defaultCalendar);
+            selectedValue.innerHTML = `
+                <div class="selected-calendar">
+                    <div class="calendar-color" style="background-color: ${color}"></div>
+                    <span class="calendar-name">${defaultCalendar.calendar_displayName}</span>
+                </div>
+            `;
+            selectElement.dataset.value = defaultCalendar.calendar_displayName;
+            
+            trigger.addEventListener('click', () => {
+                selectElement.classList.toggle('open');
+            });
+            
+            options.addEventListener('click', (e) => {
+                const option = e.target.closest('.calendar-option');
+                if (option) {
+                    const value = option.dataset.value;
+                    const calendar = CALENDARS.find(c => c.calendar_displayName === value);
+                    const color = getCalendarColor(calendar);
+                    selectedValue.innerHTML = `
+                        <div class="selected-calendar">
+                            <div class="calendar-color" style="background-color: ${color}"></div>
+                            <span class="calendar-name">${value}</span>
+                        </div>
+                    `;
+                    selectElement.dataset.value = value;
+                    selectElement.classList.remove('open');
+
+                    // Update the event name input with the most used suggestion for the new calendar
+                    const eventNameInput = selectElement.closest('.event-group').querySelector('input[type="text"]');
+                    if (eventNameInput) {
+                        const suggestions = getSuggestionsForCalendar(calendar.uri);
+                        if (suggestions.length > 0) {
+                            eventNameInput.value = suggestions[0][0];
+                        } else {
+                            // If no suggestions, use the calendar's display name
+                            eventNameInput.value = calendar.calendar_displayName;
+                        }
+                        showSuggestions(eventNameInput, calendar.uri);
+                    }
+                }
+            });
+            
+            document.addEventListener('click', (e) => {
+                if (!selectElement.contains(e.target)) {
+                    selectElement.classList.remove('open');
+                }
+            });
+        }
+
+        function initializeNextEvent() {
+            document.getElementById('stop-restart-btn').classList.add('hidden');
+            document.getElementById('remove-event-btn').classList.remove('hidden');
+            addNextEvent(0);
+        }
+
+        function removeEvent(index) {
+            // Don't allow removing if it's the last event
+            if (eventCount <= 1) {
+                return;
+            }
+
+            const eventGroup = document.querySelector(`.event-group[data-index="${index}"]`);
+            if (eventGroup) {
+                eventGroup.remove();
+                eventCount--;
+                
+                // Update data-index attributes for remaining events
+                const remainingEvents = document.querySelectorAll('.event-group');
+                remainingEvents.forEach((event, i) => {
+                    event.setAttribute('data-index', i);
+                    // Update all IDs and references within the event group
+                    const inputs = event.querySelectorAll('input, select, button');
+                    inputs.forEach(input => {
+                        const oldId = input.id;
+                        if (oldId) {
+                            const newId = oldId.replace(/\d+$/, i);
+                            input.id = newId;
+                            if (input.hasAttribute('onclick')) {
+                                input.setAttribute('onclick', input.getAttribute('onclick').replace(/\d+/, i));
+                            }
+                        }
+                    });
+                });
+
+                // Disable remove buttons if only one event remains
+                if (eventCount === 1) {
+                    document.querySelectorAll('.remove-event-btn').forEach(btn => {
+                        btn.disabled = true;
+                    });
+                }
+            }
+        }
+
+        function toggleAddNextButton(index) {
+            document.getElementById(`add-next-btn-${index}`).classList.remove('hidden');
+        }
+
+        function removeLastEvent() {
+            if (eventCount > 1) {
+                removeEvent(eventCount - 1);
+            }
+        }
+
+        function submitEvent() {
+            const events = [];
+            const eventGroups = document.querySelectorAll('.event-group');
+            
+            for (let i = 0; i < eventGroups.length; i++) {
+                const eventName = document.getElementById(`event-name-${i}`).value;
+                const startDatetime = document.getElementById(`start-datetime-${i}`).value;
+                const endDatetime = document.getElementById(`end-datetime-${i}`).value;
+                const calendarChoice = document.getElementById(`calendar-choice-${i}`).dataset.value;
+
+                if (!eventName.trim()) {
+                    alert(`Please enter an event name for event ${i + 1}.`);
+                    return;
+                }
+
+                if (new Date(startDatetime) > new Date(endDatetime)) {
+                    alert(`End time must be later than start time for event ${i + 1}.`);
+                    return;
+                }
+
+                const startDatetimeMs = new Date(startDatetime).getTime();
+                const endInput = document.getElementById(`end-datetime-${i}`);
+                let endDatetimeMs = endInput.value ? new Date(endInput.value).getTime() : "Now";
+
+                let isDefaultEnd = endInput.dataset.defaultTime && endInput.dataset.defaultTime === endInput.value;
+                let finalEndTime = isDefaultEnd ? "Now" : endDatetimeMs;
+
+                events.push({
+                    eventName: eventName.trim(),
+                    startDatetime: startDatetimeMs,
+                    endDatetime: finalEndTime,
+                    calendarChoice: calendarChoice
+                });
+            }
+            
+            document.title = JSON.stringify(events, null, 2);
+            console.log(events);
+            //automate window.close();
+        }
+
+        function setEndTimeToNow(index) {
+            const now = new Date();
+            // Get local time components
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            
+            // Format as YYYY-MM-DDThh:mm for datetime-local input
+            const nowString = `${year}-${month}-${day}T${hours}:${minutes}`;
+            
+            const endInput = document.getElementById(`end-datetime-${index}`);
+            const formGroup = endInput.closest('.form-group');
+            endInput.value = nowString;
+            endInput.dataset.defaultTime = nowString;
+            endInput.dataset.isNow = "true";
+
+            // Add live indicator if it doesn't exist
+            if (!formGroup.querySelector('.live-indicator')) {
+                const liveIndicator = document.createElement('div');
+                liveIndicator.className = 'live-indicator';
+                liveIndicator.innerHTML = `
+                    <div class="live-dot"></div>
+                    <span>Now</span>
+                `;
+                formGroup.appendChild(liveIndicator);
+            }
+        }
+
+        function updateNowEndTimes() {
+            const now = new Date();
+            // Get local time components
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            
+            // Format as YYYY-MM-DDThh:mm for datetime-local input
+            const nowString = `${year}-${month}-${day}T${hours}:${minutes}`;
+            
+            document.querySelectorAll('input[type="datetime-local"][data-is-now="true"]').forEach(input => {
+                input.value = nowString;
+                input.dataset.defaultTime = nowString;
+            });
+        }
+
+        // Initialize the update timer
+        setInterval(updateNowEndTimes, 1000); // Update every second
+        updateNowEndTimes(); // Initial update
+
+        function getSuggestionsForCalendar(calendarUri, input = '') {
+            const suggestions = CALENDAR_SUGGESTIONS[calendarUri] || {};
+            return Object.entries(suggestions)
+                .filter(([name]) => name.toLowerCase().includes(input.toLowerCase()))
+                .sort((a, b) => b[1] - a[1]); // Sort by usage count
+        }
+
+        function showSuggestions(inputElement, calendarUri) {
+            const container = inputElement.parentElement;
+            let suggestionsContainer = container.querySelector('.suggestions-container');
+            
+            if (!suggestionsContainer) {
+                suggestionsContainer = document.createElement('div');
+                suggestionsContainer.className = 'suggestions-container';
+                container.appendChild(suggestionsContainer);
+            }
+
+            const input = inputElement.value;
+            const suggestions = getSuggestionsForCalendar(calendarUri, input);
+            
+            if (suggestions.length > 0) {
+                suggestionsContainer.innerHTML = suggestions.map(([name, count]) => `
+                    <div class="suggestion-item" data-value="${name}">
+                        <span>${name}</span>
+                        <span class="suggestion-count">Used ${count} times</span>
+                    </div>
+                `).join('');
+
+                suggestionsContainer.style.display = 'block';
+
+                suggestionsContainer.querySelectorAll('.suggestion-item').forEach(item => {
+                    item.addEventListener('click', () => {
+                        inputElement.value = item.dataset.value;
+                        suggestionsContainer.style.display = 'none';
+                    });
+                });
+            } else {
+                suggestionsContainer.style.display = 'none';
+            }
+        }
+
+        function initializeEventNameInput(inputElement, calendarSelect) {
+            const clearBtn = document.createElement('button');
+            clearBtn.className = 'clear-input-btn';
+            clearBtn.innerHTML = '×';
+            clearBtn.onclick = (e) => {
+                // e.preventDefault();
+                inputElement.value = '';
+                inputElement.focus();
+                clearBtn.style.display = 'none';
+                const calendarUri = CALENDARS.find(c => c.calendar_displayName === calendarSelect.dataset.value)?.uri;
+                if (calendarUri) {
+                    showSuggestions(inputElement, calendarUri);
+                }
+            };
+            
+            inputElement.parentElement.appendChild(clearBtn);
+
+            inputElement.addEventListener('input', () => {
+                clearBtn.style.display = inputElement.value ? 'block' : 'none';
+                const calendarUri = CALENDARS.find(c => c.calendar_displayName === calendarSelect.dataset.value)?.uri;
+                if (calendarUri) {
+                    showSuggestions(inputElement, calendarUri);
+                }
+            });
+
+            inputElement.addEventListener('focus', () => {
+                if (inputElement.value) {
+                    clearBtn.style.display = 'block';
+                }
+                const calendarUri = CALENDARS.find(c => c.calendar_displayName === calendarSelect.dataset.value)?.uri;
+                if (calendarUri)
+                    showSuggestions(inputElement, calendarUri);
+            });
+
+            document.addEventListener('click', (e) => {
+                if (!inputElement.contains(e.target) && !clearBtn.contains(e.target)) {
+                    const suggestionsContainer = inputElement.parentElement.querySelector('.suggestions-container');
+                    if (suggestionsContainer) {
+                        suggestionsContainer.style.display = 'none';
+                    }
+                }
+            });
+        }
+
+        function addNextEvent(index, lastEndTime, nowTime, name) {
+            if(document.getElementById(`end-datetime-${index}`)){
+                lastEndTime = document.getElementById(`end-datetime-${index}`).value || new Date().toISOString().slice(0, 16);
+                const now = new Date();
+                // Get local time components
+                const year = now.getFullYear();
+                const month = String(now.getMonth() + 1).padStart(2, '0');
+                const day = String(now.getDate()).padStart(2, '0');
+                const hours = String(now.getHours()).padStart(2, '0');
+                const minutes = String(now.getMinutes()).padStart(2, '0');
+                nowTime = `${year}-${month}-${day}T${hours}:${minutes}`;
+            }
+            const newEventHTML = `
+                <div class='event-group' data-index="${eventCount}">
+                    <button class="remove-event-btn" onclick="removeEvent(${eventCount})" title="Remove this event" ${eventCount === 0 ? 'disabled' : ''}>×</button>
+                    <div class='form-group'>
+                        <label for='event-name-${eventCount}'>Event Name:</label>
+                        <div class="event-name-container">
+                            <input type='text' id='event-name-${eventCount}' placeholder='Enter event name' value="${name}">
+                        </div>
+                    </div>
+
+                    <div class='form-group'>
+                        <label>Select Calendar:</label>
+                        <div class="calendar-select" id="calendar-choice-${eventCount}">
+                            <div class="calendar-select-trigger">
+                                <span class="selected-value"></span>
+                            </div>
+                            <div class="calendar-options">
+                                ${CALENDARS.map(createCalendarOption).join('')}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class='form-group'>
+                        <label for='start-datetime-${eventCount}'>Start Date & Time:</label>
+                        <input type='datetime-local' id='start-datetime-${eventCount}' value='${lastEndTime}'>
+                    </div>
+
+                    <div class='form-group'>
+                        <label for='end-datetime-${eventCount}'>End Date & Time:</label>
+                        <div class="datetime-container">
+                            <input type='datetime-local' id='end-datetime-${eventCount}' value='${nowTime}' data-default-time="${nowTime}" oninput="handleEndTimeChange(${eventCount})">
+                            <div class="button-container">
+                                <button onclick="setEndTimeToNow(${eventCount})">Set to Now</button>
+                                <button onclick="toggleQuickAddMenu(${eventCount})">Quick Add Next</button>
+                                <div class="quick-add-menu" id="quick-add-menu-${eventCount}">
+                                    ${CALENDARS.map(calendar => `
+                                        <div class="quick-add-option" onclick="quickAddEvent(${eventCount}, '${calendar.calendar_displayName}')">
+                                            <div class="calendar-color" style="background-color: ${getCalendarColor(calendar)}"></div>
+                                            <span>${calendar.calendar_displayName}</span>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button class="secondary-btn hidden" id="add-next-btn-${eventCount}" onclick="addNextEvent(${eventCount}, 0, 0, '')">Add Next Event</button>
+                </div>
+            `;
+
+            document.getElementById('events-container').insertAdjacentHTML('beforeend', newEventHTML);
+            const calendarSelect = document.getElementById(`calendar-choice-${eventCount}`);
+            initializeCalendarSelect(calendarSelect, eventCount === 0);
+            initializeEventNameInput(document.getElementById(`event-name-${eventCount}`), calendarSelect);
+            setEndTimeToNow(eventCount);
+            eventCount++;
+        }
+
+        function handleEndTimeChange(index) {
+            const endInput = document.getElementById(`end-datetime-${index}`);
+            const formGroup = endInput.closest('.form-group');
+            const liveIndicator = formGroup.querySelector('.live-indicator');
+            
+            // Remove the "Now" indicator and stop updates if the value is changed
+            if (endInput.value !== endInput.dataset.defaultTime) {
+                endInput.dataset.isNow = "false";
+                if (liveIndicator) {
+                    liveIndicator.remove();
+                }
+            }
+
+            // Show the Add Next Event button
+            document.getElementById(`add-next-btn-${index}`).classList.remove('hidden');
+        }
+        
+        function toggleQuickAddMenu(index) {
+            const menu = document.getElementById(`quick-add-menu-${index}`);
+            menu.classList.toggle('show');
+            
+            // Close other open menus
+            document.querySelectorAll('.quick-add-menu.show').forEach(m => {
+                if (m !== menu) {
+                    m.classList.remove('show');
+                }
+            });
+
+            // Close menu when clicking outside
+            document.addEventListener('click', function closeMenu(e) {
+                if (!e.target.closest('.quick-add-menu') && !e.target.closest('button')) {
+                    menu.classList.remove('show');
+                    document.removeEventListener('click', closeMenu);
+                }
+            });
+        }
+
+        function quickAddEvent(currentIndex, calendarName) {
+            // Get the current event's end time to use as start time for new event
+            const currentEndTime = document.getElementById(`end-datetime-${currentIndex}`).value;
+            
+            // Get the most used event name for the selected calendar
+            const calendar = CALENDARS.find(c => c.calendar_displayName === calendarName);
+            const suggestions = getSuggestionsForCalendar(calendar.uri);
+            const defaultEventName = suggestions.length > 0 ? suggestions[0][0] : calendarName;
+            
+            // Add the new event
+            addNextEvent(currentIndex, currentEndTime, null, defaultEventName);
+            
+            // Set the calendar for the new event
+            const newIndex = currentIndex + 1;
+            const calendarSelect = document.getElementById(`calendar-choice-${newIndex}`);
+            const calendarOption = calendarSelect.querySelector(`.calendar-option[data-value="${calendarName}"]`);
+            if (calendarOption) {
+                calendarOption.click();
+            }
+            
+            // Close the quick add menu
+            document.getElementById(`quick-add-menu-${currentIndex}`).classList.remove('show');
+        }
+        
+        addNextEvent(0, start_datetime, end_datetime, event_name);
+    </script>
+</body>
+</html>
