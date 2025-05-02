@@ -370,43 +370,118 @@
             background-color: #f0f0f0;
         }
 
+        .suggestion-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
         .suggestion-count {
             color: var(--text-light);
             font-size: 12px;
         }
 
-        .event-name-container {
-            position: relative;
-        }
-
-        .clear-input-btn {
-            position: absolute;
-            right: 0;
-            top: 0;
-            bottom: 0;
-            width: 36px;
+        .remove-suggestion-btn {
             background: none;
             border: none;
             color: var(--text-light);
             cursor: pointer;
             font-size: 16px;
-            display: none;
+            padding: 0 4px;
+            line-height: 1;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+
+        .remove-suggestion-btn:hover {
+            color: var(--danger-color);
+            background-color: rgba(220, 38, 38, 0.1);
+        }
+
+        .event-name-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            width: 100%;
+        }
+
+        .save-suggestion-toggle {
+            flex: 0 0 auto;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 0;
+            border-radius: 4px;
+            color: var(--text-light);
+            transition: all 0.2s ease;
+            margin-right: 4px;
+        }
+
+        .save-suggestion-toggle svg {
+            width: 18px;
+            height: 18px;
+            fill: none;
+            stroke: currentColor;
+            transition: all 0.2s ease;
+        }
+
+        .save-suggestion-toggle.active {
+            color: var(--primary-color);
+        }
+
+        .save-suggestion-toggle.active svg {
+            fill: var(--primary-color);
+            stroke: var(--primary-color);
+        }
+
+        .save-suggestion-toggle:hover {
+            background-color: rgba(37, 99, 235, 0.1);
+        }
+
+        .save-suggestion-toggle.active:hover {
+            background-color: rgba(37, 99, 235, 0.2);
+        }
+
+        .event-name-container input {
+            flex: 1 1 0%;
+            min-width: 0;
+            padding-right: 36px;
+            line-height: 1.2;
+            height: 32px;
+        }
+
+        .clear-input-btn {
+            position: absolute;
+            right: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 36px;
+            height: 100%;
+            background: none;
+            border: none;
+            color: var(--text-light);
+            cursor: pointer;
+            font-size: 16px;
             z-index: 2;
             transition: color 0.2s ease;
             display: flex;
             align-items: center;
             justify-content: center;
-            padding-top: 2px;
+            padding: 0;
+            margin: 0;
         }
 
         .clear-input-btn:hover {
-            color: var(--text-color);
-            background: none;
-        }
-
-        .event-name-container input {
-            padding-right: 36px;
-            line-height: 1.2;
+            color: var(--danger-color);
+            background-color: rgba(220, 38, 38, 0.1);
         }
 
         @media (max-width: 480px) {
@@ -707,6 +782,31 @@
             }
         }
 
+        let removedSuggestions = new Set(); // Track removed suggestions
+
+        function removeSuggestion(event, calendarUri, suggestionName) {
+            event.stopPropagation(); // Prevent the suggestion item click event
+            // Remove the suggestion from CALENDAR_SUGGESTIONS
+            if (CALENDAR_SUGGESTIONS[calendarUri] && CALENDAR_SUGGESTIONS[calendarUri][suggestionName]) {
+                delete CALENDAR_SUGGESTIONS[calendarUri][suggestionName];
+                // Add to removed suggestions set
+                removedSuggestions.add(JSON.stringify({
+                    calendar: calendarUri,
+                    suggestion: suggestionName
+                }));
+                // If no suggestions left for this calendar, remove the calendar entry
+                if (Object.keys(CALENDAR_SUGGESTIONS[calendarUri]).length === 0) {
+                    delete CALENDAR_SUGGESTIONS[calendarUri];
+                }
+                // Robustly find the input element in the same event-name-container
+                let container = event.target.closest('.event-name-container');
+                let inputElement = container ? container.querySelector('input[type="text"]') : null;
+                if (inputElement) {
+                    showSuggestions(inputElement, calendarUri);
+                }
+            }
+        }
+
         function submitEvent() {
             const events = [];
             const eventGroups = document.querySelectorAll('.event-group');
@@ -716,6 +816,7 @@
                 const startDatetime = document.getElementById(`start-datetime-${i}`).value;
                 const endDatetime = document.getElementById(`end-datetime-${i}`).value;
                 const calendarChoice = document.getElementById(`calendar-choice-${i}`).dataset.value;
+                const saveSuggestion = document.getElementById(`save-suggestion-${i}`).classList.contains('active');
 
                 if (!eventName.trim()) {
                     alert(`Please enter an event name for event ${i + 1}.`);
@@ -738,12 +839,19 @@
                     eventName: eventName.trim(),
                     startDatetime: startDatetimeMs,
                     endDatetime: finalEndTime,
-                    calendarChoice: calendarChoice
+                    calendarChoice: calendarChoice,
+                    saveSuggestion: saveSuggestion
                 });
             }
             
-            document.title = JSON.stringify(events, null, 2);
-            console.log(events);
+            // Create the final output object
+            const output = {
+                events: events,
+                removedSuggestions: Array.from(removedSuggestions).map(item => JSON.parse(item))
+            };
+            
+            document.title = JSON.stringify(output, null, 2);
+            console.log(output);
             //automate window.close();
         }
 
@@ -823,16 +931,22 @@
                 suggestionsContainer.innerHTML = suggestions.map(([name, count]) => `
                     <div class="suggestion-item" data-value="${name}">
                         <span>${name}</span>
-                        <span class="suggestion-count">Used ${count} times</span>
+                        <div class="suggestion-actions">
+                            <span class="suggestion-count">Used ${count} times</span>
+                            <button class="remove-suggestion-btn" onclick="removeSuggestion(event, '${calendarUri}', '${name}')" title="Remove this suggestion">×</button>
+                        </div>
                     </div>
                 `).join('');
 
                 suggestionsContainer.style.display = 'block';
 
                 suggestionsContainer.querySelectorAll('.suggestion-item').forEach(item => {
-                    item.addEventListener('click', () => {
-                        inputElement.value = item.dataset.value;
-                        suggestionsContainer.style.display = 'none';
+                    item.addEventListener('click', (e) => {
+                        // Don't trigger if clicking the remove button
+                        if (!e.target.classList.contains('remove-suggestion-btn')) {
+                            inputElement.value = item.dataset.value;
+                            suggestionsContainer.style.display = 'none';
+                        }
                     });
                 });
             } else {
@@ -845,7 +959,7 @@
             clearBtn.className = 'clear-input-btn';
             clearBtn.innerHTML = '×';
             clearBtn.onclick = (e) => {
-                // e.preventDefault();
+                e.stopPropagation();
                 inputElement.value = '';
                 inputElement.focus();
                 clearBtn.style.display = 'none';
@@ -901,7 +1015,12 @@
                     <button class="remove-event-btn" onclick="removeEvent(${eventCount})" title="Remove this event" ${eventCount === 0 ? 'disabled' : ''}>×</button>
                     <div class='form-group'>
                         <label for='event-name-${eventCount}'>Event Name:</label>
-                        <div class="event-name-container">
+                        <div class="event-name-container" style="position: relative;">
+                            <button class="save-suggestion-toggle active" id="save-suggestion-${eventCount}" title="Save as suggestion" onclick="toggleSaveSuggestion(${eventCount})">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
+                                </svg>
+                            </button>
                             <input type='text' id='event-name-${eventCount}' placeholder='Enter event name' value="${name}">
                         </div>
                     </div>
@@ -1013,6 +1132,12 @@
             
             // Close the quick add menu
             document.getElementById(`quick-add-menu-${currentIndex}`).classList.remove('show');
+        }
+        
+        function toggleSaveSuggestion(index) {
+            event.stopPropagation();
+            const toggleBtn = document.getElementById(`save-suggestion-${index}`);
+            toggleBtn.classList.toggle('active');
         }
         
         addNextEvent(0, start_datetime, end_datetime, event_name);
