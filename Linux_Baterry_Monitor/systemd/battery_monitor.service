@@ -1,0 +1,20 @@
+[Unit]
+Description=Run Battery Monitor Script
+After=network.target
+
+[Service]
+ExecStart=/usr/bin/python3 /home/miguel/Documents/MiguelFranca/Programing/Python/Automations/Linux_Baterry_Monitor/battery_monitor.py
+Restart=always
+User=miguel
+WorkingDirectory=/home/miguel/Documents/MiguelFranca/Programing/Python/Automations/Linux_Baterry_Monitor/
+StandardOutput=append:/home/miguel/Documents/MiguelFranca/Programing/Python/Automations/Linux_Baterry_Monitor/battery_monitor.log
+StandardError=append:/home/miguel/Documents/MiguelFranca/Programing/Python/Automations/Linux_Baterry_Monitor/battery_monitor_error.log
+
+[Install]
+WantedBy=multi-user.target
+
+#########
+# Path /etc/systemd/system/battery_monitor.service
+# systemctl daemon-reload
+# systemctl start battery_monitor.service
+#########
