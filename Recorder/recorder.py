@@ -2,6 +2,7 @@ from pynput import mouse
 from pynput import keyboard
 from pynput.keyboard import Key
 import subprocess
+import platform
 
 import os.path
 import sys
@@ -146,8 +147,18 @@ def main(argv):
     print("Recording stopped.")
 
 def sendNotification(message):
-    subprocess.Popen(['notify-send', message])
-    return
+    if platform.system() == "Windows":
+        try:
+            from win10toast import ToastNotifier
+            toaster = ToastNotifier()
+            toaster.show_toast("Recorder", message, duration=3)
+        except ImportError:
+            print(f"Notification: {message} (win10toast not installed)")
+    else:
+        try:
+            subprocess.Popen(['notify-send', message])
+        except FileNotFoundError:
+            print(f"Notification: {message} (notify-send not found)")
 
 def on_release(key):
     logging.info('key_released {0}'.format(key))
@@ -161,6 +172,7 @@ def on_press(key):
         return False
     
     logging.info('key_pressed {0}'.format(key))
+    return True;
 
 
 def on_move(x, y):

@@ -1,6 +1,9 @@
 from pynput import mouse
 from pynput import keyboard
 import subprocess
+import platform
+if platform.system() == 'Windows':
+    from win10toast import ToastNotifier
 
 from pynput.keyboard import Key
 
@@ -9,6 +12,7 @@ import time
 import sys
 import re
 import datetime
+import ctypes
 
 stop = False
 
@@ -128,11 +132,37 @@ def countDown(seconds):
         print(i)
 
 def sendNotification(message):
-    subprocess.Popen(['notify-send', message])
+    if platform.system() == 'Windows':
+        toaster = ToastNotifier()
+        toaster.show_toast("Recorder", message, duration=5)
+    else:
+        subprocess.Popen(['notify-send', message])
     return
 
 def handleSpecialKeys(key):
     return getattr(keyboard.Key, key.replace('Key.', ''))
+
+def adjustMousePosition(x, y):
+    if platform.system() == 'Windows':
+        # Get the screen resolution on Windows
+        user32 = ctypes.windll.user32
+        screen_width = user32.GetSystemMetrics(0)
+        screen_height = user32.GetSystemMetrics(1)
+    else:
+        # Get the screen resolution on Linux
+        import subprocess
+        output = subprocess.check_output(['xrandr']).decode('utf-8')
+        for line in output.split('\n'):
+            if '*' in line:
+                screen_width, screen_height = map(int, line.split()[0].split('x'))
+                break
+
+    # Adjust the mouse position based on the screen resolution
+    # This is a simple scaling example; you may need more complex logic
+    x = int(x * screen_width / 1920)  # Assuming 1920x1080 as the reference resolution
+    y = int(y * screen_height / 1200)
+
+    return x, y
 
 def executeOp(op_str):
     matcher = lineMatcher(op_str)
@@ -160,7 +190,9 @@ def executeOp(op_str):
         matcher = re.search(coordinates_regex, param)
         pos_x = int(matcher.group(COORD_X))
         pos_y = int(matcher.group(COORD_Y))
+        pos_x, pos_y = adjustMousePosition(pos_x, pos_y)
         mouse_controller.position = (pos_x, pos_y)
+        time.sleep(0.01)  # Small delay to keep the cursor visible
     
         return
 
@@ -170,8 +202,10 @@ def executeOp(op_str):
         pos_y = int(matcher.group(COORD_Y))
         scroll_x = int(matcher.group(SCROLL_X))
         scroll_y = int(matcher.group(SCROLL_Y))
+        pos_x, pos_y = adjustMousePosition(pos_x, pos_y)
         mouse_controller.position = (pos_x, pos_y)
         mouse_controller.scroll(scroll_x, scroll_y)
+        time.sleep(0.01)  # Small delay to keep the cursor visible
     
         return
 
@@ -187,6 +221,7 @@ def executeOp(op_str):
     elif(mouse_button == "Button.middle"):
         mouse_button = mouse.Button.middle
     
+    pos_x, pos_y = adjustMousePosition(pos_x, pos_y)
     mouse_controller.position = (pos_x, pos_y)
     if(op == "Mouse_clicked"):
         mouse_controller.press(mouse_button)
@@ -239,6 +274,7 @@ def on_press(key):
     if key == Key.esc:
         stop = True
         return False
+    return True
 
 def main(argv):
     global file, filename
@@ -247,22 +283,19 @@ def main(argv):
 
     if(filename == ""):
         file = "log_1.txt"
-        counter = 1;
+        counter = 1
         while (os.path.isfile(file)):
             filename = file
             counter += 1
             file = "log_" + str(counter) + ".txt"
     else:
-        filename = "/home/miguel/Documents/MiguelFranca/Programing/Python/Recorder/" + filename
+        filename = os.path.join(os.path.dirname(os.path.abspath(__file__)), filename)
 
     log_file = open(filename, 'r')
     log_lines = log_file.readlines()
     
-
     print("Replaying " + filename + ", " + str(NUM_LOOPS) + " times at " + str(REPLAY_SPEED) + "x speed")
     countDown(count_down_seconds)
-
-    # sendNotification("Started playback.")
 
     if(NUM_LOOPS == -1):
         while not stop:
@@ -273,7 +306,7 @@ def main(argv):
 
     log_file.close()
 
-    sendNotification("Finnished playback.")
+    sendNotification("Finished playback.")
 
 def requestHelp():
     print("Use loader.py -h/--help to get help")
